@@ -1,0 +1,152 @@
+#!/bin/bash
+E_WRONG_ARGS=85
+E_NOTROOT=87
+
+script_parameters="-a -h -m -w -g -d -x -rm or -h for help."
+Number_of_expected_args=1
+ROOT_UID=0     # Only users with $UID 0 have root privileges.
+
+#exec commands
+###################################################################################################
+
+W_INFACE="wlp0s19f2u5"
+
+m_exec="macchanger --mac=00:00:00:00:00:00 ${W_INFACE}"
+
+f_exec="ufw enable"
+
+w_exec="wpa_supplicant -c /etc/wpa_supplicant.conf -i ${W_INFACE} -B"
+x_exec="wpa_supplicant -c /etc/wpa_xfin.conf -i ${W_INFACE} -B"
+
+d_exec="dhcpcd -S ipaddress=10.0.0.0 -d ${W_INFACE}"
+
+rw_exec="dhcpcd --exit ${W_INFACE}"
+kw_exec="kill -9 `pidof wpa_supplicant`"
+
+vp_exec="rc-service openvpn start"
+
+rm_exec="macchanger --random ${W_INFACE}"
+
+###################################################################################################
+
+#colours
+txtund=$(tput sgr 0 1)    # Underline
+txtbld=$(tput bold)       # Bold
+txtred=$(tput setaf 1)    # Red
+txtgrn=$(tput setaf 2)    # Green
+txtylw=$(tput setaf 3)    # Yellow
+txtblu=$(tput setaf 4)    # Blue
+txtpur=$(tput setaf 5)    # Purple
+txtcyn=$(tput setaf 6)    # Cyan
+txtwht=$(tput setaf 7)    # White
+txtrst=$(tput sgr0)       # Text reset
+
+
+#Exit if not root.
+if [ "$UID" -ne "$ROOT_UID" ]
+then
+	echo "${txtred}Only root may run this script.${txtrst}"
+	exit $E_NOTROOT
+fi
+
+#if [ $# -ne $Number_of_expected_args ]
+#then
+#	echo "Usage: `basename $0` $script_parameters"
+	# `basename $0` is the script's filename.
+#	exit $E_WRONG_ARGS
+#fi
+
+while [ $# -ne 0 ]
+do
+		
+		if [ $1 == "-h" ]
+		then
+				echo -e "my special startscript!\n  -a=all\n  -h=help\n  -m=mac\n  -w=wireless\n  -g=gpu\n  -d=dhcpcd\n  -F=firewall\n  -rw=restart wireless\n  -kw=kill wireless\n  -rm=random mac"
+				exit 0
+		fi
+
+		if [ $1 == "-a" ]
+		then
+				#GPU timer
+				echo "${txtgrn}Full init switch enabled.${txtrst}"
+				echo "performance" > /sys/class/drm/card0/device/power_dpm_state
+
+				echo -n "${txtylw}"
+				${m_exec} ;
+				echo -n "${txtrst}"
+
+				echo -n "${txtblu}"
+				${w_exec} ;
+				echo -n "${txtrst}"
+
+				echo -n "${txtpur}"
+				#${f_exec} ;
+				echo -n "${txtrst}"
+
+				echo -n "${txtcyn}"
+				${d_exec} ;
+				echo -n "${txtrst}"
+
+				${vp_exec} ;
+
+				echo "${txtgrn}${txtbld}Full init complete.${txtrst}"
+		fi
+
+		if [ $1 == "-m" ]
+		then
+				echo "${txtgrn}macchanger switch enabled.${txtrst}"
+				${m_exec}
+		fi
+
+		if [ $1 == "-w" ]
+		then
+				echo "${txtgrn}wpa_supplicant switch enabled.${txtrst}"
+				${w_exec} ;
+		fi
+
+		if [ $1 == "-g" ]
+		then
+				echo "${txtgrn}GPU timer switch enabled.${txtrst}"
+				echo "performance" > /sys/class/drm/card0/device/power_dpm_state
+		fi
+
+		if [ $1 == "-d" ]
+		then
+				echo "${txtgrn}dhcpcd switch enabled.${txtrst}"
+				${d_exec}
+		fi
+
+		if [ $1 == "-F" ]
+		then
+				echo "${txtgrn}Firewall switch enabled.${txtrst}"
+				${f_exec}
+		fi
+
+		if [ $1 == "-x" ]
+		then
+				echo "${txtgrn}x switch enabled.${txtrst}"
+				${x_exec}
+		fi
+
+		if [ $1 == "-rw" ]
+		then
+				echo "${txtgrn}Restarting wireless...${txtrst}"
+				${rw_exec} ;
+				${w_exec} ;
+		fi
+
+		if [ $1 == "-kw" ]
+		then
+				echo "${txtred}Killing wireless...${txtrst}"
+				${rw_exec} ;
+				${kw_exec} ;
+		fi
+
+		if [ $1 == "-rm" ]
+		then
+				${rm_exec} ;
+		fi
+
+		shift
+done
+
